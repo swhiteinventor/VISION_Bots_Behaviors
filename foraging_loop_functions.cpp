@@ -8,8 +8,8 @@
 /****************************************/
 
 CForagingLoopFunctions::CForagingLoopFunctions() :
-   m_cForagingArenaSideX(0.7f, 1.5f),
-   m_cForagingArenaSideY(-0.4f, 0.4f),
+   m_cForagingArenaSideX(0.7f, 0.9f),
+   m_cForagingArenaSideY(-0.1f, 0.1f),
    m_pcFloor(NULL),
    m_pcRNG(NULL),
    m_unCollectedFood(0),
@@ -89,6 +89,12 @@ CColor CForagingLoopFunctions::GetFloorColor(const CVector2& c_position_on_plane
    if(c_position_on_plane.GetX() < -1.0f) {
       return CColor::GRAY50;
    }
+   if(c_position_on_plane.GetX() < 0.7f && c_position_on_plane.GetX() > -1.0f) {
+      if(c_position_on_plane.GetY() < 0.05f && c_position_on_plane.GetY() > -0.05f) {
+         return CColor::YELLOW;
+      }
+   }
+
    for(UInt32 i = 0; i < m_cFoodPos.size(); ++i) {
       if((c_position_on_plane - m_cFoodPos[i]).SquareLength() < m_fFoodSquareRadius) {
          return CColor::BLACK;

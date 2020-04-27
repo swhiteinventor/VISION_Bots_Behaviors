@@ -6,6 +6,7 @@
 #include <argos3/core/utility/math/vector2.h>
 /* Logging */
 #include <argos3/core/utility/logging/argos_log.h>
+#include <iostream>
 
 /****************************************/
 /****************************************/
@@ -214,39 +215,52 @@ void CFootBotForaging::UpdateState() {
     * (readings 2 and 3) to tell us whether we are on gray: if so, the
     * robot is completely in the nest, otherwise it's outside.
     */
-   if(tGroundReads[2].Value > 0.40f &&
-      tGroundReads[2].Value < 0.60f &&
-      tGroundReads[3].Value > 0.40f &&
-      tGroundReads[3].Value < 0.60f) {
+
+   // so yellow is 0.886
+//    std::cout << "\n left ";
+//    std::cout << tGroundReads[0];
+//    std::cout << " ";
+//    std::cout << tGroundReads[3];
+//    std::cout << "\n right ";
+//    std::cout << tGroundReads[1];
+//    std::cout << " ";
+//    std::cout << tGroundReads[2];
+
+
+
+    if(tGroundReads[2].Value > 0.45f &&
+      tGroundReads[2].Value < 0.55f &&
+      tGroundReads[3].Value > 0.45f &&
+      tGroundReads[3].Value < 0.55f) {
       m_sStateData.InNest = true;
       m_sStateData.DriveLeft = false;
       m_sStateData.DriveRight = false;
    }
 
-    if((tGroundReads[0].Value > 0.10f &&
-       tGroundReads[0].Value < 0.40f) ||
-        (tGroundReads[1].Value > 0.10f &&
-       tGroundReads[1].Value < 0.40f) ||
-        (tGroundReads[2].Value > 0.10f &&
-         tGroundReads[2].Value < 0.40f) ||
-        (tGroundReads[3].Value > 0.10f &&
-         tGroundReads[3].Value < 0.40f)) {
+    if((tGroundReads[0].Value > 0.80f &&
+       tGroundReads[0].Value < 0.95f) ||
+        (tGroundReads[1].Value > 0.80f &&
+       tGroundReads[1].Value < 0.95f) ||
+        (tGroundReads[2].Value > 0.80f &&
+         tGroundReads[2].Value < 0.95f) ||
+        (tGroundReads[3].Value > 0.80f &&
+         tGroundReads[3].Value < 0.95f)) {
         // time to follow the line
         m_sStateData.FollowingLine = true;
         m_sStateData.FollowLineDecay = 4; //if you change this you also have to change it in the header file
 
         //do we turn left?
-        if((tGroundReads[0].Value > 0.10f &&
-            tGroundReads[0].Value < 0.40f) ||
-           (tGroundReads[3].Value > 0.10f &&
-            tGroundReads[3].Value < 0.40f)) {
+        if((tGroundReads[0].Value > 0.80f &&
+            tGroundReads[0].Value < 0.95f) ||
+           (tGroundReads[3].Value > 0.80f &&
+            tGroundReads[3].Value < 0.95f)) {
             m_sStateData.DriveLeft = true;
         }
         //do we turn right?
-        if((tGroundReads[1].Value > 0.10f &&
-            tGroundReads[1].Value < 0.40f) ||
-           (tGroundReads[2].Value > 0.10f &&
-            tGroundReads[2].Value < 0.40f)) {
+        if((tGroundReads[1].Value > 0.80f &&
+            tGroundReads[1].Value < 0.95f) ||
+           (tGroundReads[2].Value > 0.80f &&
+            tGroundReads[2].Value < 0.95f)) {
             m_sStateData.DriveRight = true;
         }
         //note that if both left and right that means drive straight!
@@ -523,6 +537,9 @@ void CFootBotForaging::Explore() {
 /****************************************/
 
 void CFootBotForaging::LineFollow() {
+
+    std::cout << "in line follow";
+
     /* We switch to 'return to nest' in two situations:
      * 1. if we have a food item
      * 2. if we have not found a food item for some time;
@@ -608,6 +625,11 @@ void CFootBotForaging::LineFollow() {
 
             /* Use the diffusion vector only */
             //SetWheelSpeedsFromVector(m_sWheelTurningParams.MaxSpeed * cDiffusion);
+
+            std::cout << "actually line following";
+
+            //indicate the agent is following the line
+            m_pcLEDs->SetAllColors(CColor::BLACK);
 
 
             //drive straight

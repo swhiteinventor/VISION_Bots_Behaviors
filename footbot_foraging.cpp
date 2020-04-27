@@ -163,6 +163,10 @@ void CFootBotForaging::ControlStep() {
          Explore();
          break;
       }
+      case SStateData::STATE_LINE_FOLLOWING: {
+          LineFollow();
+          break;
+      }
       case SStateData::STATE_RETURN_TO_NEST: {
          ReturnToNest();
          break;
@@ -195,6 +199,7 @@ void CFootBotForaging::Reset() {
 void CFootBotForaging::UpdateState() {
    /* Reset state flags */
    m_sStateData.InNest = false;
+   m_sStateData.FollowingLine = false;
    /* Read stuff from the ground sensor */
    const CCI_FootBotMotorGroundSensor::TReadings& tGroundReads = m_pcGround->GetReadings();
    /*
@@ -209,12 +214,55 @@ void CFootBotForaging::UpdateState() {
     * (readings 2 and 3) to tell us whether we are on gray: if so, the
     * robot is completely in the nest, otherwise it's outside.
     */
-   if(tGroundReads[2].Value > 0.25f &&
-      tGroundReads[2].Value < 0.75f &&
-      tGroundReads[3].Value > 0.25f &&
-      tGroundReads[3].Value < 0.75f) {
+   if(tGroundReads[2].Value > 0.40f &&
+      tGroundReads[2].Value < 0.60f &&
+      tGroundReads[3].Value > 0.40f &&
+      tGroundReads[3].Value < 0.60f) {
       m_sStateData.InNest = true;
+      m_sStateData.DriveLeft = false;
+      m_sStateData.DriveRight = false;
    }
+
+    if((tGroundReads[0].Value > 0.10f &&
+       tGroundReads[0].Value < 0.40f) ||
+        (tGroundReads[1].Value > 0.10f &&
+       tGroundReads[1].Value < 0.40f) ||
+        (tGroundReads[2].Value > 0.10f &&
+         tGroundReads[2].Value < 0.40f) ||
+        (tGroundReads[3].Value > 0.10f &&
+         tGroundReads[3].Value < 0.40f)) {
+        // time to follow the line
+        m_sStateData.FollowingLine = true;
+        m_sStateData.FollowLineDecay = 4; //if you change this you also have to change it in the header file
+
+        //do we turn left?
+        if((tGroundReads[0].Value > 0.10f &&
+            tGroundReads[0].Value < 0.40f) ||
+           (tGroundReads[3].Value > 0.10f &&
+            tGroundReads[3].Value < 0.40f)) {
+            m_sStateData.DriveLeft = true;
+        }
+        //do we turn right?
+        if((tGroundReads[1].Value > 0.10f &&
+            tGroundReads[1].Value < 0.40f) ||
+           (tGroundReads[2].Value > 0.10f &&
+            tGroundReads[2].Value < 0.40f)) {
+            m_sStateData.DriveRight = true;
+        }
+        //note that if both left and right that means drive straight!
+
+    }
+
+    if(!m_sStateData.FollowingLine && !m_sStateData.InNest){
+        if (m_sStateData.FollowLineDecay > 0){
+            m_sStateData.FollowLineDecay -= 1;
+            m_sStateData.FollowingLine = true;
+        }
+        else{
+            m_sStateData.DriveLeft = false;
+            m_sStateData.DriveRight = false;
+        }
+    }
 }
 
 /****************************************/
@@ -432,6 +480,7 @@ void CFootBotForaging::Explore() {
       m_pcLEDs->SetAllColors(CColor::BLUE);
       m_sStateData.State = SStateData::STATE_RETURN_TO_NEST;
    }
+
    else {
       /* No, perform the actual exploration */
       ++m_sStateData.TimeExploringUnsuccessfully;
@@ -468,6 +517,114 @@ void CFootBotForaging::Explore() {
          SetWheelSpeedsFromVector(m_sWheelTurningParams.MaxSpeed * cDiffusion);
       }
    }
+}
+
+/****************************************/
+/****************************************/
+
+void CFootBotForaging::LineFollow() {
+    /* We switch to 'return to nest' in two situations:
+     * 1. if we have a food item
+     * 2. if we have not found a food item for some time;
+     *    in this case, the switch is probabilistic
+     */
+    bool bReturnToNest(false);
+    /*
+     * Test the first condition: have we found a food item?
+     * NOTE: the food data is updated by the loop functions, so
+     * here we just need to read it
+     */
+    if(m_sFoodData.HasFoodItem) {
+        /* Apply the food rule, decreasing ExploreToRestProb and increasing
+         * RestToExploreProb */
+        m_sStateData.ExploreToRestProb -= m_sStateData.FoodRuleExploreToRestDeltaProb;
+        m_sStateData.ProbRange.TruncValue(m_sStateData.ExploreToRestProb);
+        m_sStateData.RestToExploreProb += m_sStateData.FoodRuleRestToExploreDeltaProb;
+        m_sStateData.ProbRange.TruncValue(m_sStateData.RestToExploreProb);
+        /* Store the result of the expedition */
+        m_eLastExplorationResult = LAST_EXPLORATION_SUCCESSFUL;
+        /* Switch to 'return to nest' */
+        bReturnToNest = true;
+    }
+        /* Test the second condition: we probabilistically switch to 'return to
+         * nest' if we have been wandering for some time and found nothing */
+    else if(m_sStateData.TimeExploringUnsuccessfully > m_sStateData.MinimumUnsuccessfulExploreTime) {
+        if (m_pcRNG->Uniform(m_sStateData.ProbRange) < m_sStateData.ExploreToRestProb) {
+            /* Store the result of the expedition */
+            m_eLastExplorationResult = LAST_EXPLORATION_UNSUCCESSFUL;
+            /* Switch to 'return to nest' */
+            bReturnToNest = true;
+        }
+        else {
+            /* Apply the food rule, increasing ExploreToRestProb and
+             * decreasing RestToExploreProb */
+            m_sStateData.ExploreToRestProb += m_sStateData.FoodRuleExploreToRestDeltaProb;
+            m_sStateData.ProbRange.TruncValue(m_sStateData.ExploreToRestProb);
+            m_sStateData.RestToExploreProb -= m_sStateData.FoodRuleRestToExploreDeltaProb;
+            m_sStateData.ProbRange.TruncValue(m_sStateData.RestToExploreProb);
+        }
+    }
+    /* So, do we return to the nest now? */
+    if(bReturnToNest) {
+        /* Yes, we do! */
+        m_sStateData.TimeExploringUnsuccessfully = 0;
+        m_sStateData.TimeSearchingForPlaceInNest = 0;
+        m_pcLEDs->SetAllColors(CColor::BLUE);
+        m_sStateData.State = SStateData::STATE_RETURN_TO_NEST;
+    }
+
+    else {
+        /* No, perform the actual line following */
+        ++m_sStateData.TimeExploringUnsuccessfully;
+        UpdateState();
+        /* Get the diffusion vector to perform obstacle avoidance */
+        bool bCollision;
+        CVector2 cDiffusion = DiffusionVector(bCollision);
+        /* Apply the collision rule, if a collision avoidance happened */
+        if(bCollision) {
+            /* Collision avoidance happened, increase ExploreToRestProb and
+             * decrease RestToExploreProb */
+            m_sStateData.ExploreToRestProb += m_sStateData.CollisionRuleExploreToRestDeltaProb;
+            m_sStateData.ProbRange.TruncValue(m_sStateData.ExploreToRestProb);
+            m_sStateData.RestToExploreProb -= m_sStateData.CollisionRuleExploreToRestDeltaProb;
+            m_sStateData.ProbRange.TruncValue(m_sStateData.RestToExploreProb);
+        }
+        /*
+         * If we are in the nest, we combine antiphototaxis with obstacle
+         * avoidance
+         * Outside the nest, we just use the diffusion vector
+         */
+        if(m_sStateData.InNest) {
+            /*
+             * The vector returned by CalculateVectorToLight() points to
+             * the light. Thus, the minus sign is because we want to go away
+             * from the light.
+             */
+            SetWheelSpeedsFromVector(
+                    m_sWheelTurningParams.MaxSpeed * cDiffusion -
+                    m_sWheelTurningParams.MaxSpeed * 0.25f * CalculateVectorToLight());
+        }
+        else {
+
+            /* Use the diffusion vector only */
+            //SetWheelSpeedsFromVector(m_sWheelTurningParams.MaxSpeed * cDiffusion);
+
+
+            //drive straight
+            if (m_sStateData.DriveRight && m_sStateData.DriveLeft){
+                m_pcWheels->SetLinearVelocity(m_sWheelTurningParams.MaxSpeed, m_sWheelTurningParams.MaxSpeed);
+            }
+            //drive right
+            else if (m_sStateData.DriveRight){
+                m_pcWheels->SetLinearVelocity(m_sWheelTurningParams.MaxSpeed, 0.0);
+            }
+            //drive straight
+            else if (m_sStateData.DriveLeft){
+                m_pcWheels->SetLinearVelocity(0.0, m_sWheelTurningParams.MaxSpeed);
+            }
+
+        }
+    }
 }
 
 /****************************************/

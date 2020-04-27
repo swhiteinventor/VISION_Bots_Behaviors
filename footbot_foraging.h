@@ -122,11 +122,17 @@ public:
       enum EState {
          STATE_RESTING = 0,
          STATE_EXPLORING,
+         STATE_LINE_FOLLOWING,
          STATE_RETURN_TO_NEST
       } State;
 
       /* True when the robot is in the nest */
       bool InNest;
+
+      bool FollowingLine = false;
+      bool DriveLeft = false;
+      bool DriveRight = false;
+      int FollowLineDecay = 4; //if you change this you also have to change it in the header file
 
       /* Initial probability to switch from resting to exploring */
       Real InitialRestToExploreProb;
@@ -278,6 +284,10 @@ private:
     */
    void Explore();
 
+    /*
+     * Executes the line following state.
+     */
+    void LineFollow();
    /*
     * Executes the return to nest state.
     */

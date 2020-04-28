@@ -216,7 +216,7 @@ void CFootBotForaging::UpdateState() {
     * robot is completely in the nest, otherwise it's outside.
     */
 
-   // so yellow is 0.886
+//   // so yellow is 0.886
 //    std::cout << "\n left ";
 //    std::cout << tGroundReads[0];
 //    std::cout << " ";
@@ -226,41 +226,48 @@ void CFootBotForaging::UpdateState() {
 //    std::cout << " ";
 //    std::cout << tGroundReads[2];
 
+    float GrayLowerBound = 0.45;
+    float GrayUpperBound = 0.55;
+    float YellowLowerBound = 0.81;
+    float YellowUpperBound = 0.91;
 
-
-    if(tGroundReads[2].Value > 0.45f &&
-      tGroundReads[2].Value < 0.55f &&
-      tGroundReads[3].Value > 0.45f &&
-      tGroundReads[3].Value < 0.55f) {
+    if(tGroundReads[2].Value > GrayLowerBound &&
+      tGroundReads[2].Value < GrayUpperBound &&
+      tGroundReads[3].Value > GrayLowerBound &&
+      tGroundReads[3].Value < GrayUpperBound) {
       m_sStateData.InNest = true;
       m_sStateData.DriveLeft = false;
       m_sStateData.DriveRight = false;
    }
 
-    if((tGroundReads[0].Value > 0.80f &&
-       tGroundReads[0].Value < 0.95f) ||
-        (tGroundReads[1].Value > 0.80f &&
-       tGroundReads[1].Value < 0.95f) ||
-        (tGroundReads[2].Value > 0.80f &&
-         tGroundReads[2].Value < 0.95f) ||
-        (tGroundReads[3].Value > 0.80f &&
-         tGroundReads[3].Value < 0.95f)) {
+    if((tGroundReads[0].Value > YellowLowerBound &&
+       tGroundReads[0].Value < YellowUpperBound) ||
+        (tGroundReads[1].Value > YellowLowerBound &&
+       tGroundReads[1].Value < YellowUpperBound) ||
+        (tGroundReads[2].Value > YellowLowerBound &&
+         tGroundReads[2].Value < YellowUpperBound) ||
+        (tGroundReads[3].Value > YellowLowerBound &&
+         tGroundReads[3].Value < YellowUpperBound)) {
         // time to follow the line
+        std::cout << "Line detected!\n";
         m_sStateData.FollowingLine = true;
         m_sStateData.FollowLineDecay = 4; //if you change this you also have to change it in the header file
+        m_sStateData.State = SStateData::STATE_LINE_FOLLOWING;
 
         //do we turn left?
-        if((tGroundReads[0].Value > 0.80f &&
-            tGroundReads[0].Value < 0.95f) ||
-           (tGroundReads[3].Value > 0.80f &&
-            tGroundReads[3].Value < 0.95f)) {
+        if((tGroundReads[0].Value > YellowLowerBound &&
+            tGroundReads[0].Value < YellowUpperBound) ||
+           (tGroundReads[3].Value > YellowLowerBound &&
+            tGroundReads[3].Value < YellowUpperBound)) {
+            std::cout << "Turn Left!\n";
             m_sStateData.DriveLeft = true;
         }
         //do we turn right?
-        if((tGroundReads[1].Value > 0.80f &&
-            tGroundReads[1].Value < 0.95f) ||
-           (tGroundReads[2].Value > 0.80f &&
-            tGroundReads[2].Value < 0.95f)) {
+        if((tGroundReads[1].Value > YellowLowerBound &&
+            tGroundReads[1].Value < YellowUpperBound) ||
+           (tGroundReads[2].Value > YellowLowerBound &&
+            tGroundReads[2].Value < YellowUpperBound)) {
+            std::cout << "Turn Right!\n";
             m_sStateData.DriveRight = true;
         }
         //note that if both left and right that means drive straight!
@@ -538,7 +545,7 @@ void CFootBotForaging::Explore() {
 
 void CFootBotForaging::LineFollow() {
 
-    std::cout << "in line follow";
+//    std::cout << "in line follow\n";
 
     /* We switch to 'return to nest' in two situations:
      * 1. if we have a food item
@@ -598,14 +605,14 @@ void CFootBotForaging::LineFollow() {
         bool bCollision;
         CVector2 cDiffusion = DiffusionVector(bCollision);
         /* Apply the collision rule, if a collision avoidance happened */
-        if(bCollision) {
-            /* Collision avoidance happened, increase ExploreToRestProb and
-             * decrease RestToExploreProb */
-            m_sStateData.ExploreToRestProb += m_sStateData.CollisionRuleExploreToRestDeltaProb;
-            m_sStateData.ProbRange.TruncValue(m_sStateData.ExploreToRestProb);
-            m_sStateData.RestToExploreProb -= m_sStateData.CollisionRuleExploreToRestDeltaProb;
-            m_sStateData.ProbRange.TruncValue(m_sStateData.RestToExploreProb);
-        }
+//        if(bCollision) {
+//            /* Collision avoidance happened, increase ExploreToRestProb and
+//             * decrease RestToExploreProb */
+//            m_sStateData.ExploreToRestProb += m_sStateData.CollisionRuleExploreToRestDeltaProb;
+//            m_sStateData.ProbRange.TruncValue(m_sStateData.ExploreToRestProb);
+//            m_sStateData.RestToExploreProb -= m_sStateData.CollisionRuleExploreToRestDeltaProb;
+//            m_sStateData.ProbRange.TruncValue(m_sStateData.RestToExploreProb);
+//        }
         /*
          * If we are in the nest, we combine antiphototaxis with obstacle
          * avoidance
@@ -626,7 +633,7 @@ void CFootBotForaging::LineFollow() {
             /* Use the diffusion vector only */
             //SetWheelSpeedsFromVector(m_sWheelTurningParams.MaxSpeed * cDiffusion);
 
-            std::cout << "actually line following";
+            std::cout << "Actually line following\n";
 
             //indicate the agent is following the line
             m_pcLEDs->SetAllColors(CColor::BLACK);
@@ -634,7 +641,7 @@ void CFootBotForaging::LineFollow() {
 
             //drive straight
             if (m_sStateData.DriveRight && m_sStateData.DriveLeft){
-                m_pcWheels->SetLinearVelocity(m_sWheelTurningParams.MaxSpeed, m_sWheelTurningParams.MaxSpeed);
+                m_pcWheels->SetLinearVelocity(m_sWheelTurningParams.MaxSpeed/2.0, m_sWheelTurningParams.MaxSpeed/2.0);
             }
             //drive right
             else if (m_sStateData.DriveRight){

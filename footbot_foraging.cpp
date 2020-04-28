@@ -695,6 +695,14 @@ void CFootBotForaging::ReturnToNest() {
 
 /****************************************/
 /****************************************/
+//// this is called by the controller to overwrite cells on the floor
+//bool CFootBotForaging::GetFloorColor(){
+//    //save the color that the robot wants for the current location
+//    return m_sStateData.DepositPheromones;
+//    }
+//}
+/****************************************/
+/****************************************/
 
 /*
  * This statement notifies ARGoS of the existence of the controller.

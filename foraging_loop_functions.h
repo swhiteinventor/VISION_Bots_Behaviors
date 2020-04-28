@@ -36,6 +36,8 @@ private:
    SInt64 m_nEnergy;
    UInt32 m_unEnergyPerFoodItem;
    UInt32 m_unEnergyPerWalkingRobot;
+
+   int PheromoneMatrix[40][40];
 };
 
 #endif

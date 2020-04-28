@@ -150,6 +150,11 @@ void CForagingLoopFunctions::PreStep() {
             /* The floor texture must be updated */
             m_pcFloor->SetChanged();
          }
+
+         // shift values from world coordinates to matrix coordinates
+         yMat = -1*std::round(cPos.getX()*10)+20;
+         xMat = -1*std::round(cPos.getY()*10)+20;
+
       }
       else {
          /* The foot-bot has no food item */

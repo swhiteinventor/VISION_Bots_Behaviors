@@ -134,6 +134,8 @@ public:
       bool DriveRight = false;
       int FollowLineDecay = 4; //if you change this you also have to change it in the header file
 
+      bool DepositPheromones = false;
+
       /* Initial probability to switch from resting to exploring */
       Real InitialRestToExploreProb;
       /* Current probability to switch from resting to exploring */

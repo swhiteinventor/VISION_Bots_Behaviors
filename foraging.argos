@@ -70,6 +70,12 @@
               energy_per_item="1000"
               energy_per_walking_robot="1"
               output="foraging.txt" />
+    <!-- add a pheromone node -->
+    <pheromones interior_width="4"
+                interior_height="4"
+                resolution="10"
+                intensity="50"
+                dissipation="1" />
   </loop_functions>
 
   <!-- *********************** -->
@@ -122,7 +128,7 @@
     <distribute>
       <position method="uniform" min="-2,-2,0" max="-1,2,0" />
       <orientation method="uniform" min="0,0,0" max="360,0,0" />
-      <entity quantity="20" max_trials="100">
+      <entity quantity="10" max_trials="100">
         <foot-bot id="fb">
           <controller config="ffc" />
         </foot-bot>

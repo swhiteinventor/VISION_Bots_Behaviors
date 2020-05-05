@@ -8,8 +8,8 @@
 /****************************************/
 
 CForagingLoopFunctions::CForagingLoopFunctions() :
-   m_cForagingArenaSideX(0.6f, 0.9f),
-   m_cForagingArenaSideY(-0.15f, 0.15f),
+   m_cForagingArenaSideX(0.1f, 3.9f),
+   m_cForagingArenaSideY(0.1f, 3.9f),
    m_pcFloor(NULL),
    m_pcRNG(NULL),
    m_unCollectedFood(0),
@@ -23,32 +23,44 @@ CForagingLoopFunctions::CForagingLoopFunctions() :
 
 void CForagingLoopFunctions::Init(TConfigurationNode& t_node) {
    try {
-      TConfigurationNode& tForaging = GetNode(t_node, "foraging");
-      /* Get a pointer to the floor entity */
-      m_pcFloor = &GetSpace().GetFloorEntity();
-      /* Get the number of food items we want to be scattered from XML */
-      UInt32 unFoodItems;
-      GetNodeAttribute(tForaging, "items", unFoodItems);
-      /* Get the number of food items we want to be scattered from XML */
-      GetNodeAttribute(tForaging, "radius", m_fFoodSquareRadius);
-      m_fFoodSquareRadius *= m_fFoodSquareRadius;
-      /* Create a new RNG */
-      m_pcRNG = CRandom::CreateRNG("argos");
-      /* Distribute uniformly the items in the environment */
-      for(UInt32 i = 0; i < unFoodItems; ++i) {
+        TConfigurationNode& tForaging = GetNode(t_node, "foraging");
+        /* Get a pointer to the floor entity */
+        m_pcFloor = &GetSpace().GetFloorEntity();
+        /* Get the number of food items we want to be scattered from XML */
+        UInt32 unFoodItems;
+        GetNodeAttribute(tForaging, "items", unFoodItems);
+        /* Get the number of food items we want to be scattered from XML */
+        GetNodeAttribute(tForaging, "radius", m_fFoodSquareRadius);
+        m_fFoodSquareRadius *= m_fFoodSquareRadius;
+        /* Create a new RNG */
+        m_pcRNG = CRandom::CreateRNG("argos");
+        /* Distribute uniformly the items in the environment */
+        for(UInt32 i = 0; i < unFoodItems; ++i) {
          m_cFoodPos.push_back(
             CVector2(m_pcRNG->Uniform(m_cForagingArenaSideX),
                      m_pcRNG->Uniform(m_cForagingArenaSideY)));
-      }
-      /* Get the output file name from XML */
-      GetNodeAttribute(tForaging, "output", m_strOutput);
-      /* Open the file, erasing its contents */
-      m_cOutput.open(m_strOutput.c_str(), std::ios_base::trunc | std::ios_base::out);
-      m_cOutput << "# clock\twalking\tresting\tcollected_food\tenergy" << std::endl;
-      /* Get energy gain per item collected */
-      GetNodeAttribute(tForaging, "energy_per_item", m_unEnergyPerFoodItem);
-      /* Get energy loss per walking robot */
-      GetNodeAttribute(tForaging, "energy_per_walking_robot", m_unEnergyPerWalkingRobot);
+        }
+        /* Get the output file name from XML */
+        GetNodeAttribute(tForaging, "output", m_strOutput);
+        /* Open the file, erasing its contents */
+        m_cOutput.open(m_strOutput.c_str(), std::ios_base::trunc | std::ios_base::out);
+        m_cOutput << "# clock\twalking\tresting\tcollected_food\tenergy" << std::endl;
+        /* Get energy gain per item collected */
+        GetNodeAttribute(tForaging, "energy_per_item", m_unEnergyPerFoodItem);
+        /* Get energy loss per walking robot */
+        GetNodeAttribute(tForaging, "energy_per_walking_robot", m_unEnergyPerWalkingRobot);
+
+        TConfigurationNode& tPheromones = GetNode(t_node, "pheromones");
+        /* Get interior field dimensions from XML */
+        GetNodeAttribute(tPheromones, "interior_width", unWidth);
+        GetNodeAttribute(tPheromones, "interior_height", unHeight);
+        GetNodeAttribute(tPheromones, "resolution", unResolution);
+
+        /* dynamic 2D array assignment of pheromone matrix*/
+//        PheromoneTrail = new int*[unHeight*unResolution];
+//        for (int i = 0; i < unHeight*unResolution; ++i) {
+//            PheromoneTrail[i] = new int[unWidth*unResolution];
+//        }
    }
    catch(CARGoSException& ex) {
       THROW_ARGOSEXCEPTION_NESTED("Error parsing loop functions!", ex);
@@ -89,10 +101,19 @@ CColor CForagingLoopFunctions::GetFloorColor(const CVector2& c_position_on_plane
    if(c_position_on_plane.GetX() < -1.0f) {
       return CColor::GRAY50;
    }
-   if(c_position_on_plane.GetX() < 0.7f && c_position_on_plane.GetX() > -1.0f) {
-      if(c_position_on_plane.GetY() < 0.05f && c_position_on_plane.GetY() > -0.05f) {
-         return CColor::YELLOW;
-      }
+//   if(c_position_on_plane.GetX() < 0.7f && c_position_on_plane.GetX() > -1.0f) {
+//      if(c_position_on_plane.GetY() < 0.05f && c_position_on_plane.GetY() > -0.05f) {
+//         return CColor::YELLOW;
+//      }
+//   }
+
+   /* Iterate over the map using c++11 range based for loop */
+   for (std::pair<std::pair<int,int>, UInt32> element : PheromoneMap) {
+      // Accessing KEY from element
+      std::pair<int,int> location = element.first;
+      // Accessing VALUE from element.
+      UInt32 intensity = element.second;
+      std::cout << location.first << ", " << location.second << " :: " << intensity << std::endl;
    }
 
    for(UInt32 i = 0; i < m_cFoodPos.size(); ++i) {
@@ -151,10 +172,29 @@ void CForagingLoopFunctions::PreStep() {
             m_pcFloor->SetChanged();
          }
 
-         // shift values from world coordinates to matrix coordinates
-         yMat = -1*std::round(cPos.getX()*10)+20;
-         xMat = -1*std::round(cPos.getY()*10)+20;
+         //shift values from world coordinates to matrix coordinates, assuming world is centered about 0,0
+//         int yMat = -1*std::round(cPos.GetX()*unResolution)+unHeight*unResolution/2;
+//         int xMat = -1*std::round(cPos.GetY()*unResolution)+unWidth*unResolution/2;
+//         PheromoneTrail[xMat,yMat] += unIntensity;
 
+         /* find the coordinate position after discretizing with the resolution */
+         int xMat = std::round(cPos.GetX()*unResolution);
+         int yMat = std::round(cPos.GetY()*unResolution);
+
+         // put the location of the pheromone trail into the hashmap, adding to the intensity if the value is already filled
+
+         /* Grab the iterator of the current location; if none find() will return the iterator that end() returns */
+         std::map<std::pair<int,int>, UInt32>::iterator itr = PheromoneMap.find(std::pair<int,int>(xMat,yMat));
+         /* Check if the current location already has a pheromone value */
+         if (itr != PheromoneMap.end()) {
+            /* Add pheromone intensity to the current location */
+            itr->second += unIntensity;
+         }
+         /* If the current location is devoid of pheromones */
+         else {
+            /* add pheromone at the current location to the hashmap */
+            PheromoneMap.insert(std::pair<std::pair<int,int>,UInt32>(std::pair<int,int>(xMat,yMat),unIntensity));
+         }
       }
       else {
          /* The foot-bot has no food item */

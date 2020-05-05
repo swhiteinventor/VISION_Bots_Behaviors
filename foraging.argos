@@ -74,7 +74,7 @@
     <pheromones interior_width="4"
                 interior_height="4"
                 resolution="10"
-                intensity="50"
+                intensity="10"
                 dissipation="1" />
   </loop_functions>
 

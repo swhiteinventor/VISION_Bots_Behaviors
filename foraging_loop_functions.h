@@ -44,7 +44,7 @@ private:
     UInt32 unWidth;
     UInt32 unResolution;
     UInt32 unIntensity;
-    UInt32 dissipation;
+    UInt32 unDissipation;
 };
 
 #endif

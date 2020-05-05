@@ -21,6 +21,7 @@ public:
    virtual void Destroy();
    virtual CColor GetFloorColor(const CVector2& c_position_on_plane);
    virtual void PreStep();
+   virtual void PostStep();
 
 private:
 
@@ -39,7 +40,7 @@ private:
     UInt32 m_unEnergyPerWalkingRobot;
 
 //    int **PheromoneTrail;
-    std::map<std::pair<int,int>, UInt32> PheromoneMap;
+    std::map<std::pair<int,int>, int> PheromoneMap;
     UInt32 unHeight;
     UInt32 unWidth;
     UInt32 unResolution;

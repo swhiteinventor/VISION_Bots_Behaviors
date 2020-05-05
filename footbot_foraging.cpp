@@ -251,7 +251,7 @@ void CFootBotForaging::UpdateState() {
         // time to follow the line
         std::cout << "Line detected!\n";
         m_sStateData.FollowingLine = true;
-        m_sStateData.FollowLineDecay = 4; //if you change this you also have to change it in the header file
+        m_sStateData.FollowLineDecay = 2; //if you change this you also have to change it in the header file
         m_sStateData.State = SStateData::STATE_LINE_FOLLOWING;
 
         //do we turn left?

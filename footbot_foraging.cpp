@@ -157,18 +157,22 @@ void CFootBotForaging::Init(TConfigurationNode& t_node) {
 void CFootBotForaging::ControlStep() {
    switch(m_sStateData.State) {
       case SStateData::STATE_RESTING: {
+         RLOG << "State: resting\n";
          Rest();
          break;
       }
       case SStateData::STATE_EXPLORING: {
+         RLOG << "State: exploring\n";
          Explore();
          break;
       }
       case SStateData::STATE_LINE_FOLLOWING: {
-          LineFollow();
-          break;
+         RLOG << "State: line following\n";
+         LineFollow();
+         break;
       }
       case SStateData::STATE_RETURN_TO_NEST: {
+         RLOG << "State: returning to nest\n";
          ReturnToNest();
          break;
       }
@@ -201,8 +205,10 @@ void CFootBotForaging::UpdateState() {
    /* Reset state flags */
    m_sStateData.InNest = false;
    m_sStateData.FollowingLine = false;
+   m_sStateData.DriveLeft = false;
+   m_sStateData.DriveRight = false;
    /* Read stuff from the ground sensor */
-   const CCI_FootBotMotorGroundSensor::TReadings& tGroundReads = m_pcGround->GetReadings();
+   const CCI_FootBotMotorGroundSensor::TReadings &tGroundReads = m_pcGround->GetReadings();
    /*
     * You can say whether you are in the nest by checking the ground sensor
     * placed close to the wheel motors. It returns a value between 0 and 1.
@@ -226,64 +232,68 @@ void CFootBotForaging::UpdateState() {
 //    std::cout << " ";
 //    std::cout << tGroundReads[2];
 
-    float GrayLowerBound = 0.45;
-    float GrayUpperBound = 0.55;
-    float YellowLowerBound = 0.81;
-    float YellowUpperBound = 0.91;
+      float GrayLowerBound = 0.45;
+      float GrayUpperBound = 0.55;
+      float YellowLowerBound = 0.81;
+      float YellowUpperBound = 0.91;
 
-    if(tGroundReads[2].Value > GrayLowerBound &&
-      tGroundReads[2].Value < GrayUpperBound &&
-      tGroundReads[3].Value > GrayLowerBound &&
-      tGroundReads[3].Value < GrayUpperBound) {
-      m_sStateData.InNest = true;
-      m_sStateData.DriveLeft = false;
-      m_sStateData.DriveRight = false;
-   }
-
-    if((tGroundReads[0].Value > YellowLowerBound &&
-       tGroundReads[0].Value < YellowUpperBound) ||
-        (tGroundReads[1].Value > YellowLowerBound &&
-       tGroundReads[1].Value < YellowUpperBound) ||
-        (tGroundReads[2].Value > YellowLowerBound &&
-         tGroundReads[2].Value < YellowUpperBound) ||
-        (tGroundReads[3].Value > YellowLowerBound &&
-         tGroundReads[3].Value < YellowUpperBound)) {
-        // time to follow the line
-        std::cout << "Line detected!\n";
-        m_sStateData.FollowingLine = true;
-        m_sStateData.FollowLineDecay = 2; //if you change this you also have to change it in the header file
-        m_sStateData.State = SStateData::STATE_LINE_FOLLOWING;
-
-        //do we turn left?
-        if((tGroundReads[0].Value > YellowLowerBound &&
-            tGroundReads[0].Value < YellowUpperBound) ||
-           (tGroundReads[3].Value > YellowLowerBound &&
-            tGroundReads[3].Value < YellowUpperBound)) {
-            std::cout << "Turn Left!\n";
-            m_sStateData.DriveLeft = true;
-        }
-        //do we turn right?
-        if((tGroundReads[1].Value > YellowLowerBound &&
-            tGroundReads[1].Value < YellowUpperBound) ||
-           (tGroundReads[2].Value > YellowLowerBound &&
-            tGroundReads[2].Value < YellowUpperBound)) {
-            std::cout << "Turn Right!\n";
-            m_sStateData.DriveRight = true;
-        }
-        //note that if both left and right that means drive straight!
-
-    }
-
-    if(!m_sStateData.FollowingLine && !m_sStateData.InNest){
-        if (m_sStateData.FollowLineDecay > 0){
-            m_sStateData.FollowLineDecay -= 1;
+      if (tGroundReads[2].Value > GrayLowerBound &&
+          tGroundReads[2].Value < GrayUpperBound &&
+          tGroundReads[3].Value > GrayLowerBound &&
+          tGroundReads[3].Value < GrayUpperBound) {
+         m_sStateData.InNest = true;
+         m_sStateData.DriveLeft = false;
+         m_sStateData.DriveRight = false;
+      }
+      if (m_sStateData.State != SStateData::STATE_RETURN_TO_NEST) {
+         if((tGroundReads[0].Value > YellowLowerBound &&
+             tGroundReads[0].Value < YellowUpperBound) ||
+            (tGroundReads[1].Value > YellowLowerBound &&
+             tGroundReads[1].Value < YellowUpperBound) ||
+            (tGroundReads[2].Value > YellowLowerBound &&
+             tGroundReads[2].Value < YellowUpperBound) ||
+            (tGroundReads[3].Value > YellowLowerBound &&
+             tGroundReads[3].Value < YellowUpperBound)) {
+            // time to follow the line
+            std::cout << "Line detected!\n";
             m_sStateData.FollowingLine = true;
-        }
-        else{
-            m_sStateData.DriveLeft = false;
-            m_sStateData.DriveRight = false;
-        }
-    }
+            //        m_sStateData.FollowLineDecay = 2; //if you change this you also have to change it in the header file
+            m_sStateData.State = SStateData::STATE_LINE_FOLLOWING;
+
+            //do we turn left?
+            if((tGroundReads[0].Value > YellowLowerBound &&
+                tGroundReads[0].Value < YellowUpperBound) ||
+               (tGroundReads[3].Value > YellowLowerBound &&
+                tGroundReads[3].Value < YellowUpperBound)) {
+               std::cout << "Turn Left!\n";
+               m_sStateData.DriveLeft = true;
+            }
+            //do we turn right?
+            if((tGroundReads[1].Value > YellowLowerBound &&
+                tGroundReads[1].Value < YellowUpperBound) ||
+               (tGroundReads[2].Value > YellowLowerBound &&
+                tGroundReads[2].Value < YellowUpperBound)) {
+               std::cout << "Turn Right!\n";
+               m_sStateData.DriveRight = true;
+            }
+            //note that if both left and right that means drive straight!
+         }
+      }
+      if (!m_sStateData.FollowingLine &&  m_sStateData.State == SStateData::STATE_LINE_FOLLOWING){
+         m_sStateData.State = SStateData::STATE_EXPLORING;
+      }
+
+//    if(!m_sStateData.FollowingLine && !m_sStateData.InNest){
+//        if (m_sStateData.FollowLineDecay > 0){
+//            m_sStateData.FollowLineDecay -= 1;
+//            m_sStateData.FollowingLine = true;
+//        }
+//        else{
+//            m_sStateData.DriveLeft = false;
+//            m_sStateData.DriveRight = false;
+//           m_sStateData.FollowingLine = false;
+//        }
+//    }
 }
 
 /****************************************/
@@ -545,13 +555,7 @@ void CFootBotForaging::Explore() {
 
 void CFootBotForaging::LineFollow() {
 
-//    std::cout << "in line follow\n";
-
-    /* We switch to 'return to nest' in two situations:
-     * 1. if we have a food item
-     * 2. if we have not found a food item for some time;
-     *    in this case, the switch is probabilistic
-     */
+    /* We switch to 'return to nest' if we have a food item*/
     bool bReturnToNest(false);
     /*
      * Test the first condition: have we found a food item?
@@ -570,24 +574,6 @@ void CFootBotForaging::LineFollow() {
         /* Switch to 'return to nest' */
         bReturnToNest = true;
     }
-        /* Test the second condition: we probabilistically switch to 'return to
-         * nest' if we have been wandering for some time and found nothing */
-    else if(m_sStateData.TimeExploringUnsuccessfully > m_sStateData.MinimumUnsuccessfulExploreTime) {
-        if (m_pcRNG->Uniform(m_sStateData.ProbRange) < m_sStateData.ExploreToRestProb) {
-            /* Store the result of the expedition */
-            m_eLastExplorationResult = LAST_EXPLORATION_UNSUCCESSFUL;
-            /* Switch to 'return to nest' */
-            bReturnToNest = true;
-        }
-        else {
-            /* Apply the food rule, increasing ExploreToRestProb and
-             * decreasing RestToExploreProb */
-            m_sStateData.ExploreToRestProb += m_sStateData.FoodRuleExploreToRestDeltaProb;
-            m_sStateData.ProbRange.TruncValue(m_sStateData.ExploreToRestProb);
-            m_sStateData.RestToExploreProb -= m_sStateData.FoodRuleRestToExploreDeltaProb;
-            m_sStateData.ProbRange.TruncValue(m_sStateData.RestToExploreProb);
-        }
-    }
     /* So, do we return to the nest now? */
     if(bReturnToNest) {
         /* Yes, we do! */
@@ -596,7 +582,6 @@ void CFootBotForaging::LineFollow() {
         m_pcLEDs->SetAllColors(CColor::BLUE);
         m_sStateData.State = SStateData::STATE_RETURN_TO_NEST;
     }
-
     else {
         /* No, perform the actual line following */
         ++m_sStateData.TimeExploringUnsuccessfully;
@@ -604,15 +589,6 @@ void CFootBotForaging::LineFollow() {
         /* Get the diffusion vector to perform obstacle avoidance */
         bool bCollision;
         CVector2 cDiffusion = DiffusionVector(bCollision);
-        /* Apply the collision rule, if a collision avoidance happened */
-//        if(bCollision) {
-//            /* Collision avoidance happened, increase ExploreToRestProb and
-//             * decrease RestToExploreProb */
-//            m_sStateData.ExploreToRestProb += m_sStateData.CollisionRuleExploreToRestDeltaProb;
-//            m_sStateData.ProbRange.TruncValue(m_sStateData.ExploreToRestProb);
-//            m_sStateData.RestToExploreProb -= m_sStateData.CollisionRuleExploreToRestDeltaProb;
-//            m_sStateData.ProbRange.TruncValue(m_sStateData.RestToExploreProb);
-//        }
         /*
          * If we are in the nest, we combine antiphototaxis with obstacle
          * avoidance
@@ -631,12 +607,11 @@ void CFootBotForaging::LineFollow() {
         else {
 
             /* Use the diffusion vector only */
-            //SetWheelSpeedsFromVector(m_sWheelTurningParams.MaxSpeed * cDiffusion);
 
-            std::cout << "Actually line following\n";
+            RLOG << "Actually line following\n";
 
             //indicate the agent is following the line
-            m_pcLEDs->SetAllColors(CColor::BLACK);
+            m_pcLEDs->SetAllColors(CColor::YELLOW);
 
 
             //drive straight
@@ -692,15 +667,6 @@ void CFootBotForaging::ReturnToNest() {
       m_sWheelTurningParams.MaxSpeed * DiffusionVector(bCollision) +
       m_sWheelTurningParams.MaxSpeed * CalculateVectorToLight());
 }
-
-/****************************************/
-/****************************************/
-//// this is called by the controller to overwrite cells on the floor
-//bool CFootBotForaging::GetFloorColor(){
-//    //save the color that the robot wants for the current location
-//    return m_sStateData.DepositPheromones;
-//    }
-//}
 /****************************************/
 /****************************************/
 

@@ -132,7 +132,7 @@ public:
       bool FollowingLine = false;
       bool DriveLeft = false;
       bool DriveRight = false;
-      int FollowLineDecay = 2; //if you change this you also have to change it in the header file
+//      int FollowLineDecay = 2; //if you change this you also have to change it in the header file
 
       bool DepositPheromones = false;
 

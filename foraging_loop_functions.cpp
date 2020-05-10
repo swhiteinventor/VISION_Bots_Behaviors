@@ -8,8 +8,8 @@
 /****************************************/
 
 CForagingLoopFunctions::CForagingLoopFunctions() :
-   m_cForagingArenaSideX(0.9f, 1.2f),
-   m_cForagingArenaSideY(-0.15f, 0.15f),
+   m_cForagingArenaSideX(0.1f, 1.0f),
+   m_cForagingArenaSideY(-0.45f, 0.45f),
    m_pcFloor(NULL),
    m_pcRNG(NULL),
    m_unCollectedFood(0),
@@ -86,6 +86,10 @@ void CForagingLoopFunctions::Reset() {
       m_cFoodPos[i].Set(m_pcRNG->Uniform(m_cForagingArenaSideX),
                         m_pcRNG->Uniform(m_cForagingArenaSideY));
    }
+
+   /* Clear the pheromone map */
+   PheromoneMap.clear();
+
 }
 
 /****************************************/
@@ -237,7 +241,7 @@ void CForagingLoopFunctions::PostStep() {
    /* Loop through the entire pheromone map to dissipate pheromones */
    while (it != PheromoneMap.end()){
       // read out the pheromone map
-      std::cout << it->first.first << ", " << it->first.second << " :: " << it->second << std::endl;
+//      std::cout << it->first.first << ", " << it->first.second << " :: " << it->second << std::endl;
       // reduce pheromone by the dissipation rate
       it->second -= unDissipation;
       // if the pheromone reaches zero delete the item from the map

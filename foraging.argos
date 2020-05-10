@@ -15,7 +15,7 @@
     <system threads="0" />
     <experiment length="0"
                 ticks_per_second="10"
-                random_seed="100" />
+                random_seed="101" />
   </framework>
 
   <!-- *************** -->
@@ -51,7 +51,7 @@
                social_rule_explore_to_rest_delta_prob="0.01"
                social_rule_rest_to_explore_delta_prob="0.01"
                minimum_resting_time="50"
-               minimum_unsuccessful_explore_time="600"
+               minimum_unsuccessful_explore_time="1200"
                minimum_search_for_place_in_nest_time="50">
           <food_rule active="true" food_rule_explore_to_rest_delta_prob="0.01" />
         </state>
@@ -101,25 +101,7 @@
     </box>
 
     <light id="light_1"
-           position="-2,-1.5,1.0"
-           orientation="0,0,0"
-           color="yellow"
-           intensity="3.0"
-           medium="leds" />
-    <light id="light_2"
-           position="-2,-0.5,1.0"
-           orientation="0,0,0"
-           color="yellow"
-           intensity="3.0"
-           medium="leds" />
-    <light id="light_3"
-           position="-2,0.5,1.0"
-           orientation="0,0,0"
-           color="yellow"
-           intensity="3.0"
-           medium="leds" />
-    <light id="light_4"
-           position="-2,1.5,1.0"
+           position="-2,0,1.0"
            orientation="0,0,0"
            color="yellow"
            intensity="3.0"

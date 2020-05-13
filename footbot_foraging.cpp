@@ -157,22 +157,22 @@ void CFootBotForaging::Init(TConfigurationNode& t_node) {
 void CFootBotForaging::ControlStep() {
    switch(m_sStateData.State) {
       case SStateData::STATE_RESTING: {
-         RLOG << "State: resting\n";
+//         RLOG << "State: resting\n";
          Rest();
          break;
       }
       case SStateData::STATE_EXPLORING: {
-         RLOG << "State: exploring\n";
+//         RLOG << "State: exploring\n";
          Explore();
          break;
       }
       case SStateData::STATE_LINE_FOLLOWING: {
-         RLOG << "State: line following\n";
+//         RLOG << "State: line following\n";
          LineFollow();
          break;
       }
       case SStateData::STATE_RETURN_TO_NEST: {
-         RLOG << "State: returning to nest\n";
+//         RLOG << "State: returning to nest\n";
          ReturnToNest();
          break;
       }
@@ -255,7 +255,7 @@ void CFootBotForaging::UpdateState() {
             (tGroundReads[3].Value > YellowLowerBound &&
              tGroundReads[3].Value < YellowUpperBound)) {
             // time to follow the line
-            std::cout << "Line detected!\n";
+//            std::cout << "Line detected!\n";
             m_sStateData.FollowingLine = true;
             //        m_sStateData.FollowLineDecay = 2; //if you change this you also have to change it in the header file
             m_sStateData.State = SStateData::STATE_LINE_FOLLOWING;
@@ -265,7 +265,7 @@ void CFootBotForaging::UpdateState() {
                 tGroundReads[0].Value < YellowUpperBound) ||
                (tGroundReads[3].Value > YellowLowerBound &&
                 tGroundReads[3].Value < YellowUpperBound)) {
-               std::cout << "Turn Left!\n";
+//               std::cout << "Turn Left!\n";
                m_sStateData.DriveLeft = true;
             }
             //do we turn right?
@@ -273,7 +273,7 @@ void CFootBotForaging::UpdateState() {
                 tGroundReads[1].Value < YellowUpperBound) ||
                (tGroundReads[2].Value > YellowLowerBound &&
                 tGroundReads[2].Value < YellowUpperBound)) {
-               std::cout << "Turn Right!\n";
+//               std::cout << "Turn Right!\n";
                m_sStateData.DriveRight = true;
             }
             //note that if both left and right that means drive straight!
@@ -608,7 +608,7 @@ void CFootBotForaging::LineFollow() {
 
             /* Use the diffusion vector only */
 
-            RLOG << "Actually line following\n";
+//            RLOG << "Actually line following\n";
 
             //indicate the agent is following the line
             m_pcLEDs->SetAllColors(CColor::YELLOW);

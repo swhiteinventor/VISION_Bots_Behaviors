@@ -41,11 +41,14 @@ private:
 
 //    int **PheromoneTrail;
     std::map<std::pair<int,int>, int> PheromoneMap;
-    UInt32 unHeight;
-    UInt32 unWidth;
-    UInt32 unResolution;
-    UInt32 unIntensity;
-    UInt32 unDissipation;
+    int unHeight;
+    int unWidth;
+    int unResolution;
+    int unIntensity;
+    int unDissipation;
+    int unRadius;
+    int unStrong;
+
 };
 
 #endif

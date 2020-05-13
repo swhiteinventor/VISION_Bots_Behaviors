@@ -8,8 +8,8 @@
 /****************************************/
 
 CForagingLoopFunctions::CForagingLoopFunctions() :
-   m_cForagingArenaSideX(0.1f, 1.0f),
-   m_cForagingArenaSideY(-0.45f, 0.45f),
+   m_cForagingArenaSideX(0.9f, 1.7f),
+   m_cForagingArenaSideY(-0.35f, 0.35f),
    m_pcFloor(NULL),
    m_pcRNG(NULL),
    m_unCollectedFood(0),
@@ -57,6 +57,8 @@ void CForagingLoopFunctions::Init(TConfigurationNode& t_node) {
       GetNodeAttribute(tPheromones, "resolution", unResolution);
       GetNodeAttribute(tPheromones, "intensity", unIntensity);
       GetNodeAttribute(tPheromones, "dissipation", unDissipation);
+      GetNodeAttribute(tPheromones, "radius", unRadius);
+      GetNodeAttribute(tPheromones, "strong", unStrong);
 
         /* dynamic 2D array assignment of pheromone matrix*/
 //        PheromoneTrail = new int*[unHeight*unResolution];
@@ -116,12 +118,21 @@ CColor CForagingLoopFunctions::GetFloorColor(const CVector2& c_position_on_plane
    /* find the coordinate position after discretizing with the resolution */
    int xLoc = std::round(c_position_on_plane.GetX()*unResolution);
    int yLoc = std::round(c_position_on_plane.GetY()*unResolution);
-   /* Grab the iterator of the given location; if none find() will return the iterator that end() returns */
+   /* Grab the iterator of the given location; if none, find() will return the iterator that end() returns */
    std::map<std::pair<int,int>, int>::iterator itr = PheromoneMap.find(std::pair<int,int>(xLoc,yLoc));
    /* Check if the current location has a pheromone value */
    if (itr != PheromoneMap.end()) {
-      /* return color of pheromone */
-      return CColor::YELLOW;
+      /* return color of pheromone based on intensity. If above the strong threshold, the color is just yellow. */
+      if (itr->second >= unStrong) {
+         return CColor::YELLOW;
+      }
+      else {
+         UInt8 alpha = 255 * (itr->second % unStrong) / unStrong;
+         /* create color with alpha based on how much pheromone is left*/
+         CColor mixed = CColor(255,255,0,alpha);
+//         return mixed.Blend(CColor::WHITE);
+         return mixed;
+      }
    }
    return CColor::WHITE;
 }
@@ -173,29 +184,26 @@ void CForagingLoopFunctions::PreStep() {
             /* The floor texture must be updated */
             m_pcFloor->SetChanged();
          }
-
-         //shift values from world coordinates to matrix coordinates, assuming world is centered about 0,0
-//         int yMat = -1*std::round(cPos.GetX()*unResolution)+unHeight*unResolution/2;
-//         int xMat = -1*std::round(cPos.GetY()*unResolution)+unWidth*unResolution/2;
-//         PheromoneTrail[xMat,yMat] += unIntensity;
-
-         /* find the coordinate position after discretizing with the resolution */
-         int xMat = std::round(cPos.GetX()*unResolution);
-         int yMat = std::round(cPos.GetY()*unResolution);
-
-         // put the location of the pheromone trail into the hashmap, adding to the intensity if the value is already filled
-
-         /* Grab the iterator of the current location; if none find() will return the iterator that end() returns */
-         std::map<std::pair<int,int>, int>::iterator itr = PheromoneMap.find(std::pair<int,int>(xMat,yMat));
-         /* Check if the current location already has a pheromone value */
-         if (itr != PheromoneMap.end()) {
-            /* Add pheromone intensity to the current location */
-            itr->second += unIntensity;
-         }
-         /* If the current location is devoid of pheromones */
-         else {
-            /* add pheromone at the current location to the hashmap */
-            PheromoneMap.insert(std::pair<std::pair<int,int>,int>(std::pair<int,int>(xMat,yMat),unIntensity));
+         /* put the location of the pheromone trail into the hashmap, adding to the intensity if the value is already filled */
+         for (int y = -1*unRadius; y <= unRadius; y++) {
+            for (int x = -1*unRadius; x <= unRadius; x++) {
+               /* calculate distance from center */
+               float distance = sqrt((x)^2+(y)^2);
+               /* find the coordinate position after discretizing with the resolution */
+               int xMat = std::round(cPos.GetX()*unResolution) + x;
+               int yMat = std::round(cPos.GetY()*unResolution) + y;
+               /* Grab the iterator of the current location; if none find() will return the iterator that end() returns */
+               std::map<std::pair<int,int>, int>::iterator itr = PheromoneMap.find(std::pair<int,int>(xMat,yMat));
+               if (itr != PheromoneMap.end()) {
+                  /* Add pheromone intensity to the current location */
+                  itr->second += unIntensity;// - std::round(unIntensity*distance/sqrt(2*(unRadius)^2));
+               }
+                  /* If the current location is devoid of pheromones */
+               else {
+                  /* add pheromone at the current location to the hashmap */
+                  PheromoneMap.insert(std::pair<std::pair<int,int>,int>(std::pair<int,int>(xMat,yMat), unIntensity )); //- std::round(unIntensity*distance/sqrt(2*(unRadius)^2))));
+               }
+            }
          }
       }
       else {
@@ -235,36 +243,24 @@ void CForagingLoopFunctions::PreStep() {
 
 void CForagingLoopFunctions::PostStep() {
 
-   // create an iterator for looping through the pheromone map
+   /* Create an iterator for looping through the pheromone map */
    std::map<std::pair<int,int>, int>::iterator it = PheromoneMap.begin();
 
    /* Loop through the entire pheromone map to dissipate pheromones */
    while (it != PheromoneMap.end()){
-      // read out the pheromone map
+      /* Read out the pheromone map */
 //      std::cout << it->first.first << ", " << it->first.second << " :: " << it->second << std::endl;
-      // reduce pheromone by the dissipation rate
+      /* Reduce pheromone by the dissipation rate */
       it->second -= unDissipation;
-      // if the pheromone reaches zero delete the item from the map
+      /* If the pheromone reaches zero, delete the item from the map */
       if (it->second <= 0) {
          it = PheromoneMap.erase(it);
       }
       else{
-         // Increment the Iterator to point to next entry
+         /* Increment the Iterator to point to next entry */
          it ++;
       }
    }
-
-//   /* Update pheromone map by dissipating pheromones */
-//   for (std::pair<std::pair<int,int>, int> element : PheromoneMap) {
-//      // reduce pheromone by the dissipation rate
-//      element.second -= unDissipation;
-//      // if the pheromone reaches zero delete the item from the map
-//      if (element.second <= 0) {
-//         PheromoneMap.erase(element.first);
-//      }
-//      // read out the pheromone map
-//      std::cout << element.first.first << ", " << element.first.second << " :: " << element.second << std::endl;
-//   }
 
    /* The floor texture must be updated */
    m_pcFloor->SetChanged();

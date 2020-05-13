@@ -74,10 +74,10 @@
     <pheromones interior_width="4"
                 interior_height="4"
                 resolution="50"
-                intensity="45"
+                intensity="90"
                 dissipation="1"
                 radius="2"
-                strong="30" />
+                strong="90" />
   </loop_functions>
 
   <!-- *********************** -->
@@ -100,6 +100,17 @@
     </box>
     <box id="wall_west" size="0.1,4,0.5" movable="false">
       <body position="-2,0,0" orientation="0,0,0" />
+    </box>
+    <!--
+    <box id="closure_right" size="0.8,0.1,0.1" movable="false">
+      <body position="1.5,-0.55,0" orientation="0,0,0" />
+    </box>
+    <box id="closure_left" size="0.8,0.1,0.1" movable="false">
+      <body position="1.5,0.55,0" orientation="0,0,0" />
+    </box>
+    --->
+    <box id="closure_bottom" size="0.1,0.8,0.1" movable="false">
+      <body position="0.8,0.-55,0" orientation="0,0,0" />
     </box>
 
     <light id="light_1"

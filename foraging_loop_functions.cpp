@@ -8,7 +8,7 @@
 /****************************************/
 
 CForagingLoopFunctions::CForagingLoopFunctions() :
-   m_cForagingArenaSideX(0.9f, 1.7f),
+   m_cForagingArenaSideX(1.1f, 1.9f),
    m_cForagingArenaSideY(-0.35f, 0.35f),
    m_pcFloor(NULL),
    m_pcRNG(NULL),
@@ -130,8 +130,7 @@ CColor CForagingLoopFunctions::GetFloorColor(const CVector2& c_position_on_plane
          UInt8 alpha = 255 * (itr->second % unStrong) / unStrong;
          /* create color with alpha based on how much pheromone is left*/
          CColor mixed = CColor(255,255,0,alpha);
-//         return mixed.Blend(CColor::WHITE);
-         return mixed;
+         return mixed.Blend(CColor::WHITE);
       }
    }
    return CColor::WHITE;
